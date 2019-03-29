@@ -22,7 +22,7 @@ import PhotoPreviewItem from './SwipeableCard';
 
 const ButtonSpacing = (WINDOW_WIDTH - 56 * 2) / 4;
 
-const SwipeDistance = WINDOW_WIDTH / 4;
+const SwipeDistance = WINDOW_WIDTH / 3;
 
 const styles = StyleSheet.create({
   flex: {
@@ -79,6 +79,7 @@ class PhotoListScene extends PureComponent {
     };
 
     this.panResponder = undefined;
+    this.cardRefs = [];
   }
 
   componentWillMount() {
@@ -121,7 +122,7 @@ class PhotoListScene extends PureComponent {
 
   componentDidMount() {
     // eslint-disable-next-line
-    axios.get('https://api.nasa.gov/planetary/apod?api_key=d6mcDhS3ASwqIlAwiO9bPin3tLeVGDOjvZ3jFYpp&count=20')
+    axios.get('https://api.nasa.gov/planetary/apod?api_key=d6mcDhS3ASwqIlAwiO9bPin3tLeVGDOjvZ3jFYpp&count=4')
       .then(res => this.setState({ pendingPhotos: res.data }))
       .catch(() => AlertMessage.fromRequest('Cannot get photos'))
       .finally(() => this.setState({ isLoading: false }));
@@ -159,46 +160,22 @@ class PhotoListScene extends PureComponent {
     return scale > 1.3 ? 1.3 : scale;
   };
 
-  popCard = (bLike) => {
-    Animated.timing(this.state.xValue, {
-      toValue: WINDOW_WIDTH * (bLike ? 1 : -1),
-      duration: 300,
-    }).start(() => {
-      this.setState((prevState) => {
-        const popCard = prevState.pendingPhotos.shift();
-        const reviewedPhotos = [
-          ...prevState.reviewedPhotos,
-          { ...popCard, isLiked: bLike }
-        ];
-        return {
-          pendingPhotos: prevState.pendingPhotos,
-          reviewedPhotos,
-        };
-      });
+  onSwipe = (dx) => {
+    this.state.likeButtonOpacity.setValue(this.getLikeButtonOpacity(dx));
+    this.state.unlikeButtonOpacity.setValue(this.getUnlikeButtonOpacity(dx));
 
-      // Reset swipe card position
-      this.state.xValue.setValue(0);
-    });
+    this.state.likeButtonScale.setValue(this.getLikeButtonScale(dx));
+    this.state.unlikeButtonScale.setValue(this.getUnlikeButtonScale(dx));
   };
 
-  renderSwipableCard = (source) => {
-    return (
-      <Animated.View
-        {...this.panResponder.panHandlers}
-        style={[
-          styles.card,
-          {
-            opacity: 1,
-            transform: [{ translateX: this.state.xValue }]
-          }
-        ]}
-      >
-        <PhotoPreviewItem
-          source={source}
-          index={0}
-        />
-      </Animated.View>
-    );
+  popCard = (bLike, cardIndex) => {
+    this.onSwipe(0);
+
+    if (cardIndex < this.cardRefs.length - 1) {
+      for (let i = cardIndex + 1; i < this.cardRefs.length; i++) {
+        this.cardRefs[i].moveForward();
+      }
+    }
   };
 
   renderPhotos = () => {
@@ -213,23 +190,21 @@ class PhotoListScene extends PureComponent {
       return undefined;
     }
 
-    const tempItems = [...this.state.pendingPhotos];
-    const firstItem = tempItems.shift();
-    const previewItems = tempItems.slice(0, 3);
-
     return (
       <View style={styles.photoList}>
         <View style={styles.flex}>
-          {previewItems.map((photo, index) => {
+          {this.state.pendingPhotos.map((photo, index) => {
             return (
               <PhotoPreviewItem
+                ref={ref => this.cardRefs[index] = ref}
                 key={get(photo, 'explanation', index)}
                 source={photo}
-                index={index + 1}
+                index={index}
+                onPop={this.popCard}
+                onSwipe={this.onSwipe}
               />
             );
           })}
-          {this.renderSwipableCard(firstItem)}
         </View>
         <View style={styles.buttons}>
           <TouchableOpacity onPress={() => this.popCard(false)}>

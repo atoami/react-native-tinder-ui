@@ -4,7 +4,7 @@ import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import {
   View,
-  StyleSheet,
+  StyleSheet, Animated, PanResponder,
 } from 'react-native';
 import { get } from 'lodash';
 import moment from 'moment';
@@ -16,6 +16,7 @@ import { WINDOW_WIDTH } from 'src/constants';
 import { CachedImageBackground } from 'src/components';
 
 const PHOTO_WIDTH = WINDOW_WIDTH - 32;
+const SwipeDistance = WINDOW_WIDTH / 3;
 
 const styles = StyleSheet.create({
   title: {
@@ -30,7 +31,10 @@ const styles = StyleSheet.create({
     color: Colors.white,
     marginHorizontal: 32,
     fontSize: 14
-  }
+  },
+  card: {
+    position: 'absolute',
+  },
 });
 
 class PhotoPreviewItem extends PureComponent {
@@ -38,72 +42,184 @@ class PhotoPreviewItem extends PureComponent {
   constructor(props) {
     super(props);
 
-    this.state = {
-      finishedLoading: false
-    };
-  }
-
-  render() {
-    const { index, source } = this.props;
-
-    const zIndex = index > 2 ? 2 : index;
+    const zIndex = props.index; // index > 2 ? 2 : index;
 
     const width = PHOTO_WIDTH - zIndex * 32;
     const left = zIndex * 16;
     const top = 48 - zIndex * 16;
     const bottom = zIndex * 16;
 
+    this.state = {
+      finishedLoading: false,
+      xValue: new Animated.Value(0),
+      leftValue: new Animated.Value(left),
+      widthValue: new Animated.Value(width),
+      topValue: new Animated.Value(top),
+      bottomValue: new Animated.Value(bottom),
+    };
+
+    this.panResponder = undefined;
+  }
+
+  componentWillMount() {
+    this.panResponder = PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponderCapture: () => true,
+      onPanResponderMove: (evt, gestureState) => {
+        console.log('dx = ', gestureState.dx);
+        this.state.xValue.setValue(gestureState.dx);
+        this.props.onSwipe(gestureState.dx);
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        if (gestureState.dx > 0) {
+          if (gestureState.dx >= SwipeDistance) {
+            this.popCard(true);
+          } else {
+            this.state.xValue.setValue(0);
+            this.props.onSwipe(0);
+          }
+        } else if (gestureState.dx < 0) {
+          if (Math.abs(gestureState.dx) >= SwipeDistance) {
+            this.popCard(false);
+          } else {
+            this.state.xValue.setValue(0);
+            this.props.onSwipe(0);
+          }
+        }
+      }
+    });
+  }
+
+  popCard = (bLike) => {
+    this.props.onPop(bLike, this.props.index);
+
+    Animated.timing(this.state.xValue, {
+      toValue: WINDOW_WIDTH * (bLike ? 1 : -1),
+      duration: 300,
+    }).start();
+  };
+
+  moveForward = () => {
+    Animated.parallel(
+      [
+        Animated.timing(this.state.leftValue, {
+          toValue: this.state.leftValue.__getValue() - 16,
+          duration: 300,
+        }),
+        Animated.timing(this.state.widthValue, {
+          toValue: this.state.widthValue.__getValue() + 32,
+          duration: 300,
+        }),
+        Animated.timing(this.state.bottomValue, {
+          toValue: this.state.bottomValue.__getValue() - 16,
+          duration: 300,
+        }),
+        Animated.timing(this.state.topValue, {
+          toValue: this.state.topValue.__getValue() + 16,
+          duration: 300,
+        })
+      ], { useNativeDriver: true }
+    ).start(() => {});
+  };
+
+  moveBackward = () => {
+    Animated.parallel(
+      [
+        Animated.timing(this.state.leftValue, {
+          toValue: this.state.leftValue.__getValue() + 16,
+          duration: 300,
+        }),
+        Animated.timing(this.state.widthValue, {
+          toValue: this.state.widthValue.__getValue() - 32,
+          duration: 300,
+        }),
+        Animated.timing(this.state.bottomValue, {
+          toValue: this.state.bottomValue.__getValue() + 16,
+          duration: 300,
+        }),
+        Animated.timing(this.state.topValue, {
+          toValue: this.state.topValue.__getValue() - 16,
+          duration: 300,
+        })
+      ], { useNativeDriver: true }
+    ).start(() => {});
+  };
+
+  render() {
+    const { index, source } = this.props;
+
     return (
-      <CachedImageBackground
-        source={{ uri: get(source, 'url') }}
-        style={{
-          position: 'absolute',
-          width,
-          left,
-          top,
-          bottom,
-          zIndex: 99 - index,
-          backgroundColor: Colors.white,
-          shadowColor: '#000',
-          shadowOffset: {
-            width: 0,
-            height: 0
-          },
-          shadowOpacity: 0.6,
-          shadowRadius: 6,
-          elevation: 10,
-          borderRadius: 8,
-        }}
-        resizeMode={'cover'}
-        borderRadius={8}
-        onLoadEnd={() => this.setState({ finishedLoading: true })}
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            zIndex: 99 - index,
+            transform: [{ translateX: this.state.xValue }]
+          }
+        ]}
       >
-        {this.state.finishedLoading &&
-          <LinearGradient
-            style={[StyleSheet.absoluteFill, { borderRadius: 8 }]}
-            locations={[0, 0.3, 0.7, 1]}
-            colors={[
-              'rgba(0, 0, 0, 0.8)',
-              'rgba(0, 0, 0, 0)',
-              'rgba(0, 0, 0, 0)',
-              'rgba(0, 0, 0, 0.3)'
-            ]}
-          />
-        }
-        {this.state.finishedLoading &&
-          <View>
-            <IBMPlexSansMedium style={styles.title} numberOfLines={1}>
-              {get(source, 'title', 'No title')}
-            </IBMPlexSansMedium>
-            <IBMPlexSansRegular numberOfLines={1} style={styles.explanation}>
-              {get(source, 'explanation')}
-            </IBMPlexSansRegular>
-            <IBMPlexSansRegular style={styles.explanation}>
-              {moment(get(source, 'date'), 'YYYY-MM-DD').format('MMM DD, YYYY')}
-            </IBMPlexSansRegular>
-          </View>
-        }
-      </CachedImageBackground>
+        <Animated.View
+          {...this.panResponder.panHandlers}
+          style={[
+            styles.card,
+            {
+              opacity: 1,
+              left: this.state.leftValue,
+              width: this.state.widthValue,
+              top: this.state.topValue,
+              bottom: this.state.bottomValue,
+            }
+          ]}
+        >
+          <CachedImageBackground
+            source={{ uri: get(source, 'url') }}
+            style={{
+              ...StyleSheet.absoluteFill,
+              backgroundColor: Colors.white,
+              shadowColor: '#000',
+              shadowOffset: {
+                width: 0,
+                height: 0
+              },
+              shadowOpacity: 0.6,
+              shadowRadius: 6,
+              elevation: 10,
+              borderRadius: 8,
+            }}
+            resizeMode={'cover'}
+            borderRadius={8}
+            onLoadEnd={() => this.setState({ finishedLoading: true })}
+          >
+            {this.state.finishedLoading &&
+              <LinearGradient
+                style={[StyleSheet.absoluteFill, { borderRadius: 8 }]}
+                locations={[0, 0.3, 0.7, 1]}
+                colors={[
+                  'rgba(0, 0, 0, 0.8)',
+                  'rgba(0, 0, 0, 0)',
+                  'rgba(0, 0, 0, 0)',
+                  'rgba(0, 0, 0, 0.3)'
+                ]}
+              />
+            }
+            {this.state.finishedLoading &&
+              <View>
+                <IBMPlexSansMedium style={styles.title} numberOfLines={1}>
+                  {get(source, 'title', 'No title')}
+                </IBMPlexSansMedium>
+                <IBMPlexSansRegular numberOfLines={1} style={styles.explanation}>
+                  {get(source, 'explanation')}
+                </IBMPlexSansRegular>
+                <IBMPlexSansRegular style={styles.explanation}>
+                  {moment(get(source, 'date'), 'YYYY-MM-DD').format('MMM DD, YYYY')}
+                </IBMPlexSansRegular>
+              </View>
+            }
+          </CachedImageBackground>
+        </Animated.View>
+      </Animated.View>
     );
   }
 }
@@ -111,6 +227,8 @@ class PhotoPreviewItem extends PureComponent {
 PhotoPreviewItem.propTypes = {
   index: PropTypes.number.isRequired,
   source: PropTypes.shape({}).isRequired,
+  onPop: PropTypes.func.isRequired,
+  onSwipe: PropTypes.func.isRequired,
 };
 
 export default PhotoPreviewItem;
