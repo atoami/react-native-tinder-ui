@@ -1,0 +1,1 @@
+export { SimpleImageButton } from './SimpleImageButton';
