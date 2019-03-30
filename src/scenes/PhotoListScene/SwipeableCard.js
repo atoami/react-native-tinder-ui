@@ -15,7 +15,7 @@ import { Colors } from 'src/theme';
 import { WINDOW_WIDTH } from 'src/constants';
 import { CachedImageBackground } from 'src/components';
 
-const PHOTO_WIDTH = WINDOW_WIDTH - 32;
+const CardPhotoWidth = WINDOW_WIDTH - 32;
 const SwipeDistance = WINDOW_WIDTH / 3;
 
 const styles = StyleSheet.create({
@@ -37,17 +37,15 @@ const styles = StyleSheet.create({
   },
 });
 
-class PhotoPreviewItem extends PureComponent {
+class SwipeableCard extends PureComponent {
 
   constructor(props) {
     super(props);
 
-    const zIndex = props.index; // index > 2 ? 2 : index;
-
-    const width = PHOTO_WIDTH - zIndex * 32;
-    const left = zIndex * 16;
-    const top = 48 - zIndex * 16;
-    const bottom = zIndex * 16;
+    const width = CardPhotoWidth - props.index * 32;
+    const left = props.index * 16;
+    const top = 48 - props.index * 16;
+    const bottom = props.index * 16;
 
     this.state = {
       finishedLoading: false,
@@ -68,22 +66,25 @@ class PhotoPreviewItem extends PureComponent {
       onMoveShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponderCapture: () => true,
       onPanResponderMove: (evt, gestureState) => {
-        console.log('dx = ', gestureState.dx);
         this.state.xValue.setValue(gestureState.dx);
         this.props.onSwipe(gestureState.dx);
       },
       onPanResponderRelease: (evt, gestureState) => {
         if (gestureState.dx > 0) {
           if (gestureState.dx >= SwipeDistance) {
-            this.popCard(true);
+            this.pop(true); // Like card!
           } else {
+            // Cancel dragging
+            // Reset card position to the center
             this.state.xValue.setValue(0);
             this.props.onSwipe(0);
           }
         } else if (gestureState.dx < 0) {
           if (Math.abs(gestureState.dx) >= SwipeDistance) {
-            this.popCard(false);
+            this.pop(false); // Unlike card!
           } else {
+            // Cancel dragging
+            // Reset card position to the center
             this.state.xValue.setValue(0);
             this.props.onSwipe(0);
           }
@@ -92,15 +93,28 @@ class PhotoPreviewItem extends PureComponent {
     });
   }
 
-  popCard = (bLike) => {
-    this.props.onPop(bLike, this.props.index);
+  /**
+   * Pop card
+   * @param liked: boolean - like or unlike
+   */
+  pop = (liked) => {
+    // Pop card
+    this.props.onPop(liked, this.props.index);
 
+    // Reset like/unlike button status
+    this.props.onSwipe(0);
+
+    // Swipe card by screen width to hide
     Animated.timing(this.state.xValue, {
-      toValue: WINDOW_WIDTH * (bLike ? 1 : -1),
+      toValue: WINDOW_WIDTH * (liked ? 1 : -1),
       duration: 300,
+      useNativeDriver: true
     }).start();
   };
 
+  /**
+   * Move card to the front by one
+   */
   moveForward = () => {
     Animated.parallel(
       [
@@ -124,6 +138,9 @@ class PhotoPreviewItem extends PureComponent {
     ).start(() => {});
   };
 
+  /**
+   * Move card to the back by one
+   */
   moveBackward = () => {
     Animated.parallel(
       [
@@ -145,6 +162,17 @@ class PhotoPreviewItem extends PureComponent {
         })
       ], { useNativeDriver: true }
     ).start(() => {});
+  };
+
+  /**
+   * Reset card position to the center of the screen
+   */
+  reset = () => {
+    Animated.timing(this.state.xValue, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true
+    }).start();
   };
 
   render() {
@@ -224,11 +252,11 @@ class PhotoPreviewItem extends PureComponent {
   }
 }
 
-PhotoPreviewItem.propTypes = {
+SwipeableCard.propTypes = {
   index: PropTypes.number.isRequired,
   source: PropTypes.shape({}).isRequired,
   onPop: PropTypes.func.isRequired,
   onSwipe: PropTypes.func.isRequired,
 };
 
-export default PhotoPreviewItem;
+export default SwipeableCard;

@@ -4,31 +4,19 @@ import React, { PureComponent } from 'react';
 import {
   View,
   StyleSheet,
-  Animated,
-  PanResponder,
-  TouchableOpacity,
 } from 'react-native';
 import { Navigation } from 'react-native-navigation';
 import axios from 'axios';
 import { MaterialIndicator } from 'react-native-indicators';
-import { get } from 'lodash';
 
 import { SimpleNavBar } from 'src/components';
-import { IBMPlexSansRegular } from 'src/fonts';
+import {IBMPlexSansMedium, IBMPlexSansRegular} from 'src/fonts';
 import { Colors } from 'src/theme';
 import { AlertMessage } from 'src/utilities';
-import { WINDOW_WIDTH } from 'src/constants';
-import PhotoPreviewItem from './SwipeableCard';
-
-const ButtonSpacing = (WINDOW_WIDTH - 56 * 2) / 4;
-
-const SwipeDistance = WINDOW_WIDTH / 3;
+import SwipeableCardView from './SwipeableCardView';
 
 const styles = StyleSheet.create({
   flex: {
-    flex: 1,
-  },
-  photoList: {
     flex: 1,
   },
   countLabel: {
@@ -38,28 +26,15 @@ const styles = StyleSheet.create({
     lineHeight: 56,
     textAlign: 'center'
   },
-  buttons: {
-    position: 'absolute',
-    height: 56,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    paddingHorizontal: ButtonSpacing,
-    justifyContent: 'space-between',
-    bottom: -28
+  noCardView: {
+    ...StyleSheet.absoluteFill,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
-  actionButtonIcon: {
-    width: 56,
-    height: 56,
-  },
-  card: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 9999
-  },
+  noCardLabel: {
+    fontSize: 16,
+    color: Colors.rollingStone
+  }
 });
 
 class PhotoListScene extends PureComponent {
@@ -69,193 +44,77 @@ class PhotoListScene extends PureComponent {
 
     this.state = {
       isLoading: true,
-      pendingPhotos: [],
-      reviewedPhotos: [],
-      xValue: new Animated.Value(0),
-      likeButtonOpacity: new Animated.Value(1),
-      unlikeButtonOpacity: new Animated.Value(1),
-      likeButtonScale: new Animated.Value(1),
-      unlikeButtonScale: new Animated.Value(1),
+      cardSource: [],
+      reviewedCards: [],
     };
 
-    this.panResponder = undefined;
-    this.cardRefs = [];
-  }
-
-  componentWillMount() {
-    this.panResponder = PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onStartShouldSetPanResponderCapture: () => false,
-      onMoveShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponderCapture: () => true,
-      onPanResponderMove: (evt, gestureState) => {
-        this.state.xValue.setValue(gestureState.dx);
-
-        this.state.likeButtonOpacity.setValue(this.getLikeButtonOpacity(gestureState.dx));
-        this.state.unlikeButtonOpacity.setValue(this.getUnlikeButtonOpacity(gestureState.dx));
-
-        this.state.likeButtonScale.setValue(this.getLikeButtonScale(gestureState.dx));
-        this.state.unlikeButtonScale.setValue(this.getUnlikeButtonScale(gestureState.dx));
-      },
-      onPanResponderRelease: (evt, gestureState) => {
-        if (gestureState.dx > 0) {
-          if (gestureState.dx >= SwipeDistance) {
-            this.popCard(true);
-          } else {
-            this.state.xValue.setValue(0);
-          }
-        } else if (gestureState.dx < 0) {
-          if (Math.abs(gestureState.dx) >= SwipeDistance) {
-            this.popCard(false);
-          } else {
-            this.state.xValue.setValue(0);
-          }
-        }
-
-        this.state.likeButtonOpacity.setValue(1);
-        this.state.unlikeButtonOpacity.setValue(1);
-        this.state.likeButtonScale.setValue(1);
-        this.state.unlikeButtonScale.setValue(1);
-      }
-    });
+    this.cardView = undefined;
   }
 
   componentDidMount() {
     // eslint-disable-next-line
-    axios.get('https://api.nasa.gov/planetary/apod?api_key=d6mcDhS3ASwqIlAwiO9bPin3tLeVGDOjvZ3jFYpp&count=4')
-      .then(res => this.setState({ pendingPhotos: res.data }))
+    axios.get('https://api.nasa.gov/planetary/apod?api_key=d6mcDhS3ASwqIlAwiO9bPin3tLeVGDOjvZ3jFYpp&count=3')
+      .then(res => this.setState({ cardSource: res.data }))
       .catch(() => AlertMessage.fromRequest('Cannot get photos'))
       .finally(() => this.setState({ isLoading: false }));
   }
 
-  getUnlikeButtonOpacity = (swipeOffset) => {
-    if (swipeOffset <= 0) {
-      return 1;
-    }
-    const opacity = 1 - Math.abs(swipeOffset) / SwipeDistance / 2;
-    return opacity < 0.2 ? 0.2 : opacity;
+  onPop = (reviewedCards) => {
+    this.setState({ reviewedCards });
   };
 
-  getLikeButtonOpacity = (swipeOffset) => {
-    if (swipeOffset >= 0) {
-      return 1;
-    }
-    const opacity = 1 - Math.abs(swipeOffset) / SwipeDistance / 2;
-    return opacity < 0.2 ? 0.2 : opacity;
-  };
-
-  getUnlikeButtonScale = (swipeOffset) => {
-    if (swipeOffset >= 0) {
-      return 1;
-    }
-    const scale = 1 + Math.abs(swipeOffset) / SwipeDistance / 2;
-    return scale > 1.3 ? 1.3 : scale;
-  };
-
-  getLikeButtonScale = (swipeOffset) => {
-    if (swipeOffset <= 0) {
-      return 1;
-    }
-    const scale = 1 + Math.abs(swipeOffset) / SwipeDistance / 2;
-    return scale > 1.3 ? 1.3 : scale;
-  };
-
-  onSwipe = (dx) => {
-    this.state.likeButtonOpacity.setValue(this.getLikeButtonOpacity(dx));
-    this.state.unlikeButtonOpacity.setValue(this.getUnlikeButtonOpacity(dx));
-
-    this.state.likeButtonScale.setValue(this.getLikeButtonScale(dx));
-    this.state.unlikeButtonScale.setValue(this.getUnlikeButtonScale(dx));
-  };
-
-  popCard = (bLike, cardIndex) => {
-    this.onSwipe(0);
-
-    if (cardIndex < this.cardRefs.length - 1) {
-      for (let i = cardIndex + 1; i < this.cardRefs.length; i++) {
-        this.cardRefs[i].moveForward();
-      }
-    }
-  };
-
-  renderPhotos = () => {
-    console.log('this.state.pendingPhotos = ', this.state.pendingPhotos);
+  renderCardView = () => {
+    // Calling api...
     if (this.state.isLoading) {
       return (
         <MaterialIndicator color={Colors.burntSienna} />
       );
     }
 
-    if (this.state.pendingPhotos.length === 0) {
-      return undefined;
-    }
+    // Return 'No available cards' label in the following cases
+    // 1. Card source is empty
+    // 2. Reviewed all cards
+    const sourceLength = this.state.cardSource.length;
+    const reviewedLength = this.state.reviewedCards.length;
+    const noCards = sourceLength === 0 || (sourceLength > 0 && reviewedLength === sourceLength);
 
     return (
-      <View style={styles.photoList}>
-        <View style={styles.flex}>
-          {this.state.pendingPhotos.map((photo, index) => {
-            return (
-              <PhotoPreviewItem
-                ref={ref => this.cardRefs[index] = ref}
-                key={get(photo, 'explanation', index)}
-                source={photo}
-                index={index}
-                onPop={this.popCard}
-                onSwipe={this.onSwipe}
-              />
-            );
-          })}
-        </View>
-        <View style={styles.buttons}>
-          <TouchableOpacity onPress={() => this.popCard(false)}>
-            <Animated.Image
-              style={[
-                styles.actionButtonIcon,
-                {
-                  opacity: this.state.unlikeButtonOpacity,
-                  transform: [{ scale: this.state.unlikeButtonScale }]
-                }
-              ]}
-              source={require('assets/icons/ic_dislike.png')}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => this.popCard(true)}>
-            <Animated.Image
-              style={[
-                styles.actionButtonIcon,
-                {
-                  opacity: this.state.likeButtonOpacity,
-                  transform: [{ scale: this.state.likeButtonScale }]
-                }
-              ]}
-              source={require('assets/icons/ic_like.png')}
-            />
-          </TouchableOpacity>
-
-        </View>
+      <View style={styles.flex}>
+        <SwipeableCardView
+          ref={ref => this.cardView = ref}
+          cards={this.state.cardSource}
+          onPop={this.onPop}
+        />
+        {noCards &&
+          <View style={styles.noCardView}>
+            <IBMPlexSansMedium style={styles.noCardLabel}>
+              {'No available cards'}
+            </IBMPlexSansMedium>
+          </View>
+        }
       </View>
     );
   };
 
   render() {
-    const { isLoading, pendingPhotos, reviewedPhotos } = this.state;
+    const { isLoading, cardSource, reviewedCards } = this.state;
 
-    const disabledUndoAction = isLoading || reviewedPhotos.length === 0;
+    const disabledUndoAction = isLoading || reviewedCards.length === 0;
 
     return (
       <View style={styles.flex}>
         <SimpleNavBar
           title={'My Mars'}
           leftText={'Undo'}
-          leftAction={disabledUndoAction ? undefined : () => {}}
+          leftAction={disabledUndoAction ? undefined : () => this.cardView.undo()}
           rightIcon={require('assets/icons/ic_heart.png')}
           rightAction={isLoading ? undefined : () => {}}
         />
         <View style={[styles.flex, { zIndex: 10, paddingHorizontal: 16 }]}>
-          {this.renderPhotos()}
+          {this.renderCardView()}
         </View>
         <IBMPlexSansRegular style={styles.countLabel}>
-          {isLoading ? 'Downloading' : `${pendingPhotos.length} cards`}
+          {isLoading ? 'Downloading' : `${cardSource.length - reviewedCards.length} cards`}
         </IBMPlexSansRegular>
       </View>
     );
