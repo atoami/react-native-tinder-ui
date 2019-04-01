@@ -99,7 +99,7 @@ class SwipeableCard extends PureComponent {
    * Pop card
    * @param liked: boolean - like or unlike
    */
-  pop = (liked) => {
+  pop = (liked, onComplete) => {
     // Pop card
     this.props.onPop(liked, this.props.index);
 
@@ -111,7 +111,7 @@ class SwipeableCard extends PureComponent {
       toValue: WINDOW_WIDTH * (liked ? 1 : -1),
       duration: 300,
       useNativeDriver: true
-    }).start();
+    }).start(onComplete);
   };
 
   /**
@@ -173,12 +173,12 @@ class SwipeableCard extends PureComponent {
   /**
    * Reset card position to the center of the screen
    */
-  reset = () => {
+  reset = (onComplete) => {
     Animated.timing(this.state.xValue, {
       toValue: 0,
       duration: 300,
       useNativeDriver: true
-    }).start();
+    }).start(onComplete);
   };
 
   render() {

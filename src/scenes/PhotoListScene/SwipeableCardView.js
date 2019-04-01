@@ -122,10 +122,10 @@ class SwipeableCardView extends PureComponent {
    */
   popCard = (bLike, cardIndex) => {
     // Do nothing until current card animation is done
-    if (this.processingCard) {
-      return;
-    }
-    this.processingCard = true;
+    // if (this.processingCard) {
+    //   return;
+    // }
+    // this.processingCard = true;
 
     // Save reviewed card with card index and like/unlike status
     const poppedCard = {
@@ -138,7 +138,7 @@ class SwipeableCardView extends PureComponent {
     if (cardIndex < this.cardRefs.length - 1) {
       for (let i = cardIndex + 1; i < cardIndex + 3; i += 1) {
         if (this.cardRefs.length > i && !!this.cardRefs[i]) {
-          this.cardRefs[i].moveForward(() => this.processingCard = false);
+          this.cardRefs[i].moveForward();
         }
       }
     }
@@ -188,15 +188,15 @@ class SwipeableCardView extends PureComponent {
     const tempCards = [...reviewedCards];
     const cardWillUndo = tempCards.pop();
 
-    // Return the last reviewed card to original position
-    this.cardRefs[cardWillUndo.cardIndex].reset();
-
     // Zoom out and move the current visible cards
     for (let i = cardWillUndo.cardIndex + 1; i < this.cardRefs.length; i += 1) {
       if (this.cardRefs[i]) {
-        this.cardRefs[i].moveBackward(() => this.processingCard = false);
+        this.cardRefs[i].moveBackward();
       }
     }
+
+    // Return the last reviewed card to original position
+    this.cardRefs[cardWillUndo.cardIndex].reset(() => this.processingCard = false);
 
     // Notify parent view to update remaining card amount
     // this.cardRefs.pop();
@@ -204,6 +204,20 @@ class SwipeableCardView extends PureComponent {
       // Notify parent to update remaining card amount number
       this.props.onPop(this.state.reviewedCards);
     });
+  };
+
+  pop = (liked) => {
+    // Do nothing until current card animation is done
+    if (this.processingCard) {
+      return;
+    }
+    this.processingCard = true;
+
+    // Pop liked/unliked card
+    this.cardRefs[this.state.reviewedCards.length].pop(
+      liked,
+      () => this.processingCard = false
+    );
   };
 
   render() {
@@ -233,7 +247,7 @@ class SwipeableCardView extends PureComponent {
         <View style={styles.buttons}>
           <TouchableOpacity
             disabled={noCards}
-            onPress={() => this.cardRefs[this.state.reviewedCards.length].pop(false)}
+            onPress={() => this.pop(false)}
           >
             <Animated.Image
               style={[
@@ -248,7 +262,7 @@ class SwipeableCardView extends PureComponent {
           </TouchableOpacity>
           <TouchableOpacity
             disabled={noCards}
-            onPress={() => this.cardRefs[this.state.reviewedCards.length].pop(true)}
+            onPress={() => this.pop(true)}
           >
             <Animated.Image
               style={[
