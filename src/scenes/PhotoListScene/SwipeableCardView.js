@@ -52,6 +52,7 @@ class SwipeableCardView extends PureComponent {
       unlikeButtonOpacity: new Animated.Value(1),
       likeButtonScale: new Animated.Value(1),
       unlikeButtonScale: new Animated.Value(1),
+      renderedCardIndexes: props.cards.map((k, i) => i).slice(0, 4)
     };
 
     this.cardRefs = [];
@@ -114,19 +115,31 @@ class SwipeableCardView extends PureComponent {
       cardIndex
     };
 
+    // Zoom in and move the cards behind the reviewed card
+    if (cardIndex < this.cardRefs.length - 1) {
+      for (let i = cardIndex + 1; i < cardIndex + 3; i += 1) {
+        if (this.cardRefs.length > i && !!this.cardRefs[i]) {
+          this.cardRefs[i].moveForward();
+        }
+      }
+    }
+
     this.setState(prevState => ({
-      reviewedCards: [...prevState.reviewedCards, poppedCard]
+      reviewedCards: [...prevState.reviewedCards, poppedCard],
     }), () => {
+      // Pre-render new card behind 3rd card
+      if (this.cardRefs.length <= (cardIndex + 4) && this.state.cards.length > (cardIndex + 4)) {
+        this.setState(prevState => ({
+          renderedCardIndexes: [
+            ...prevState.renderedCardIndexes,
+            cardIndex + 4
+          ]
+        }));
+      }
+
       // Notify parent view to update remaining card amount
       this.props.onPop(this.state.reviewedCards);
     });
-
-    // Zoom in and move the cards behind the reviewed card
-    if (cardIndex < this.cardRefs.length - 1) {
-      for (let i = cardIndex + 1; i < this.cardRefs.length; i += 1) {
-        this.cardRefs[i].moveForward();
-      }
-    }
   };
 
   /**
@@ -146,11 +159,22 @@ class SwipeableCardView extends PureComponent {
 
     // Zoom out and move the current visible cards
     for (let i = cardWillUndo.cardIndex + 1; i < this.cardRefs.length; i += 1) {
-      this.cardRefs[i].moveBackward();
+      if (this.cardRefs[i]) {
+        this.cardRefs[i].moveBackward();
+      }
     }
 
     // Notify parent view to update remaining card amount
-    this.setState({ reviewedCards: tempCards }, () => {
+    // this.cardRefs.pop();
+    console.log('cardRefs = ', this.cardRefs);
+    this.setState((prevState) => {
+      // const renderedIndexes = prevState.renderedCardIndexes;
+      // renderedIndexes.pop();
+      return {
+        reviewedCards: tempCards,
+        // renderedCardIndexes: renderedIndexes
+      };
+    }, () => {
       this.props.onPop(this.state.reviewedCards);
     });
   };
@@ -166,12 +190,12 @@ class SwipeableCardView extends PureComponent {
     return (
       <View style={styles.photoList}>
         <View style={styles.flex}>
-          {this.state.cards.map((photo, index) => {
+          {this.state.renderedCardIndexes.map((index) => {
             return (
               <SwipeableCard
                 ref={ref => this.cardRefs[index] = ref}
-                key={get(photo, 'explanation', index)}
-                source={photo}
+                key={get(this.state.cards[index], 'explanation', index)}
+                source={this.state.cards[index]}
                 index={index}
                 onPop={this.popCard}
                 onSwipe={this.onSwipe}

@@ -53,7 +53,7 @@ class PhotoListScene extends PureComponent {
 
   componentDidMount() {
     // eslint-disable-next-line
-    axios.get('https://api.nasa.gov/planetary/apod?api_key=d6mcDhS3ASwqIlAwiO9bPin3tLeVGDOjvZ3jFYpp&count=3')
+    axios.get('https://api.nasa.gov/planetary/apod?api_key=d6mcDhS3ASwqIlAwiO9bPin3tLeVGDOjvZ3jFYpp&count=10')
       .then(res => this.setState({ cardSource: res.data }))
       .catch(() => AlertMessage.fromRequest('Cannot get photos'))
       .finally(() => this.setState({ isLoading: false }));

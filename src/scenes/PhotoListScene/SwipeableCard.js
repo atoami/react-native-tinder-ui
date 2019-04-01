@@ -42,10 +42,12 @@ class SwipeableCard extends PureComponent {
   constructor(props) {
     super(props);
 
-    const width = CardPhotoWidth - props.index * 32;
-    const left = props.index * 16;
-    const top = 48 - props.index * 16;
-    const bottom = props.index * 16;
+    const zIndex = props.index > 2 ? 2 : props.index;
+
+    const width = CardPhotoWidth - zIndex * 32;
+    const left = zIndex * 16;
+    const top = 48 - zIndex * 16;
+    const bottom = zIndex * 16;
 
     this.state = {
       finishedLoading: false,
@@ -142,6 +144,10 @@ class SwipeableCard extends PureComponent {
    * Move card to the back by one
    */
   moveBackward = () => {
+    if (this.state.leftValue.__getValue() >= 32) {
+      return;
+    }
+
     Animated.parallel(
       [
         Animated.timing(this.state.leftValue, {
@@ -206,14 +212,6 @@ class SwipeableCard extends PureComponent {
             style={{
               ...StyleSheet.absoluteFill,
               backgroundColor: Colors.white,
-              shadowColor: '#000',
-              shadowOffset: {
-                width: 0,
-                height: 0
-              },
-              shadowOpacity: 0.6,
-              shadowRadius: 6,
-              elevation: 10,
               borderRadius: 8,
             }}
             resizeMode={'cover'}
