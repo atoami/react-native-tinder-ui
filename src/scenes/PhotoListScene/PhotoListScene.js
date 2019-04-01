@@ -10,9 +10,10 @@ import axios from 'axios';
 import { MaterialIndicator } from 'react-native-indicators';
 
 import { SimpleNavBar } from 'src/components';
-import {IBMPlexSansMedium, IBMPlexSansRegular} from 'src/fonts';
+import { IBMPlexSansMedium, IBMPlexSansRegular } from 'src/fonts';
 import { Colors } from 'src/theme';
 import { AlertMessage } from 'src/utilities';
+import { FAVORITE_LIST_SCENE } from 'src/navigator';
 import SwipeableCardView from './SwipeableCardView';
 
 const styles = StyleSheet.create({
@@ -96,6 +97,17 @@ class PhotoListScene extends PureComponent {
     );
   };
 
+  routeToFavorites = () => {
+    Navigation.push(this.props.componentId, {
+      component: {
+        name: FAVORITE_LIST_SCENE,
+        passProps: {
+          favoriteCards: this.state.reviewedCards.filter(c => c.liked)
+        }
+      }
+    });
+  };
+
   render() {
     const { isLoading, cardSource, reviewedCards } = this.state;
 
@@ -108,7 +120,7 @@ class PhotoListScene extends PureComponent {
           leftText={'Undo'}
           leftAction={disabledUndoAction ? undefined : () => this.cardView.undo()}
           rightIcon={require('assets/icons/ic_heart.png')}
-          rightAction={isLoading ? undefined : () => {}}
+          rightAction={isLoading ? undefined : this.routeToFavorites}
         />
         <View style={[styles.flex, { zIndex: 10, paddingHorizontal: 16 }]}>
           {this.renderCardView()}

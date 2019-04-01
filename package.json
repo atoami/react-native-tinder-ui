@@ -23,6 +23,7 @@
     "react-native-linear-gradient": "^2.5.4",
     "react-native-navigation": "^2.16.0",
     "react-native-progress": "^3.6.0",
+    "react-native-snap-carousel": "^3.7.5",
     "react-redux": "^6.0.1",
     "recompose": "^0.30.0",
     "redux": "^4.0.1",

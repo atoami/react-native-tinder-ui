@@ -1,0 +1,1 @@
+export { MyMarView } from './MyMarView';

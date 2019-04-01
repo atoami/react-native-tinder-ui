@@ -33,8 +33,12 @@ export function startApp() {
 
   Navigation.setRoot({
     root: {
-      component: {
-        name: PHOTO_LIST_SCENE
+      stack: {
+        children: [{
+          component: {
+            name: PHOTO_LIST_SCENE,
+          }
+        }]
       }
     }
   });

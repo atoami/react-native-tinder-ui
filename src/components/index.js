@@ -4,3 +4,4 @@ export {
   SimpleButton,
 } from './Buttons';
 export { SimpleNavBar } from './NavBars';
+export { MyMarView } from './ListView';
