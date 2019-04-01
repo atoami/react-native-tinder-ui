@@ -12,7 +12,6 @@ import { MaterialIndicator } from 'react-native-indicators';
 import { SimpleNavBar } from 'src/components';
 import { IBMPlexSansMedium, IBMPlexSansRegular } from 'src/fonts';
 import { Colors } from 'src/theme';
-import { AlertMessage } from 'src/utilities';
 import { FAVORITE_LIST_SCENE } from 'src/navigator';
 import SwipeableCardView from './SwipeableCardView';
 
@@ -56,7 +55,7 @@ class PhotoListScene extends PureComponent {
     // eslint-disable-next-line
     axios.get('https://api.nasa.gov/planetary/apod?api_key=d6mcDhS3ASwqIlAwiO9bPin3tLeVGDOjvZ3jFYpp&count=10')
       .then(res => this.setState({ cardSource: res.data }))
-      .catch(() => AlertMessage.fromRequest('Cannot get photos'))
+      .catch(e => console.log(e))
       .finally(() => this.setState({ isLoading: false }));
   }
 

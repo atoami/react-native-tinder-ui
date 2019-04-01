@@ -188,21 +188,23 @@ class SwipeableCardView extends PureComponent {
     const tempCards = [...reviewedCards];
     const cardWillUndo = tempCards.pop();
 
-    // Zoom out and move the current visible cards
-    for (let i = cardWillUndo.cardIndex + 1; i < this.cardRefs.length; i += 1) {
-      if (this.cardRefs[i]) {
-        this.cardRefs[i].moveBackward();
-      }
-    }
-
     // Return the last reviewed card to original position
-    this.cardRefs[cardWillUndo.cardIndex].reset(() => this.processingCard = false);
+    this.cardRefs[cardWillUndo.cardIndex].reset(() => {
+      // Zoom out and move the current visible cards
+      for (let i = cardWillUndo.cardIndex + 1; i < this.cardRefs.length; i += 1) {
+        if (this.cardRefs[i]) {
+          this.cardRefs[i].moveBackward();
+        }
+      }
 
-    // Notify parent view to update remaining card amount
-    // this.cardRefs.pop();
-    this.setState({ reviewedCards: tempCards }, () => {
-      // Notify parent to update remaining card amount number
-      this.props.onPop(this.state.reviewedCards);
+      // Notify parent view to update remaining card amount
+      // this.cardRefs.pop();
+      this.setState({ reviewedCards: tempCards }, () => {
+        // Notify parent to update remaining card amount number
+        this.props.onPop(this.state.reviewedCards);
+      });
+
+      this.processingCard = false;
     });
   };
 

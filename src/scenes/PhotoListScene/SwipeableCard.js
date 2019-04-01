@@ -83,18 +83,22 @@ class SwipeableCard extends PureComponent {
    * @param liked: boolean - like or unlike
    */
   pop = (liked, onComplete) => {
-    // Pop card
-    this.props.onPop(liked, this.props.index);
-
-    // Reset like/unlike button status
-    this.props.onSwipe(0);
-
     // Swipe card by screen width to hide
     Animated.timing(this.state.xValue, {
       toValue: WINDOW_WIDTH * (liked ? 1 : -1),
       duration: 300,
       useNativeDriver: true
-    }).start(onComplete);
+    }).start(() => {
+      // Pop card
+      this.props.onPop(liked, this.props.index);
+
+      // Reset like/unlike button status
+      this.props.onSwipe(0);
+
+      if (onComplete) {
+        onComplete();
+      }
+    });
   };
 
   /**
