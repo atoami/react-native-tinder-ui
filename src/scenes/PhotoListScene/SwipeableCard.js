@@ -212,6 +212,14 @@ class SwipeableCard extends PureComponent {
             style={{
               ...StyleSheet.absoluteFill,
               backgroundColor: Colors.white,
+              shadowColor: '#000',
+              shadowOffset: {
+                width: 2,
+                height: 2
+              },
+              shadowOpacity: 0.6,
+              shadowRadius: 2,
+              elevation: 10,
               borderRadius: 8,
             }}
             resizeMode={'cover'}
