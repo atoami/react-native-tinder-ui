@@ -57,6 +57,7 @@ class SwipeableCardView extends PureComponent {
     };
 
     this.cardRefs = [];
+    this.processingCard = false;
   }
 
   componentDidMount() {
@@ -120,6 +121,12 @@ class SwipeableCardView extends PureComponent {
    * @param cardIndex - card component index
    */
   popCard = (bLike, cardIndex) => {
+    // Do nothing until current card animation is done
+    if (this.processingCard) {
+      return;
+    }
+    this.processingCard = true;
+
     // Save reviewed card with card index and like/unlike status
     const poppedCard = {
       ...this.state.cards[cardIndex],
@@ -131,7 +138,7 @@ class SwipeableCardView extends PureComponent {
     if (cardIndex < this.cardRefs.length - 1) {
       for (let i = cardIndex + 1; i < cardIndex + 3; i += 1) {
         if (this.cardRefs.length > i && !!this.cardRefs[i]) {
-          this.cardRefs[i].moveForward();
+          this.cardRefs[i].moveForward(() => this.processingCard = false);
         }
       }
     }
@@ -167,6 +174,12 @@ class SwipeableCardView extends PureComponent {
    * Undo action
    */
   undo = () => {
+    // Do nothing until current card animation is done
+    if (this.processingCard) {
+      return;
+    }
+    this.processingCard = true;
+
     // Get the last reviewed card from the reviewed card list
     // If non-reviewed card exists, do nothing
     const { reviewedCards } = this.state;
@@ -181,7 +194,7 @@ class SwipeableCardView extends PureComponent {
     // Zoom out and move the current visible cards
     for (let i = cardWillUndo.cardIndex + 1; i < this.cardRefs.length; i += 1) {
       if (this.cardRefs[i]) {
-        this.cardRefs[i].moveBackward();
+        this.cardRefs[i].moveBackward(() => this.processingCard = false);
       }
     }
 

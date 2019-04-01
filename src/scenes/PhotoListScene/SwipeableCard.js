@@ -117,7 +117,7 @@ class SwipeableCard extends PureComponent {
   /**
    * Move card to the front by one
    */
-  moveForward = () => {
+  moveForward = (onComplete) => {
     Animated.parallel(
       [
         Animated.timing(this.state.leftValue, {
@@ -137,13 +137,13 @@ class SwipeableCard extends PureComponent {
           duration: 300,
         })
       ], { useNativeDriver: true }
-    ).start(() => {});
+    ).start(onComplete);
   };
 
   /**
    * Move card to the back by one
    */
-  moveBackward = () => {
+  moveBackward = (onComplete) => {
     if (this.state.leftValue.__getValue() >= 32) {
       return;
     }
@@ -167,7 +167,7 @@ class SwipeableCard extends PureComponent {
           duration: 300,
         })
       ], { useNativeDriver: true }
-    ).start(() => {});
+    ).start(onComplete);
   };
 
   /**
