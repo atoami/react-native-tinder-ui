@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { get } from 'lodash';
+import FastImage from 'react-native-fast-image';
 
 import { WINDOW_WIDTH } from 'src/constants';
 import SwipeableCard from './SwipeableCard';
@@ -56,6 +57,17 @@ class SwipeableCardView extends PureComponent {
     };
 
     this.cardRefs = [];
+  }
+
+  componentDidMount() {
+    if (this.props.cards.length <= 4) {
+      return;
+    }
+
+    // Preload images for next cards
+    // This makes rendering next cards faster
+    const uris = this.props.cards.map(c => ({ uri: c.url })).slice(4);
+    FastImage.preload(uris);
   }
 
   getUnlikeButtonOpacity = (swipeOffset) => {
@@ -140,6 +152,15 @@ class SwipeableCardView extends PureComponent {
       // Notify parent view to update remaining card amount
       this.props.onPop(this.state.reviewedCards);
     });
+
+    // Preload images for next cards
+    // This makes rendering next cards faster
+    if (this.props.cards.length <= cardIndex + 1) {
+      return;
+    }
+
+    const uris = this.props.cards.map(c => ({ uri: c.url })).slice(cardIndex + 1);
+    FastImage.preload(uris);
   };
 
   /**
@@ -166,15 +187,8 @@ class SwipeableCardView extends PureComponent {
 
     // Notify parent view to update remaining card amount
     // this.cardRefs.pop();
-    console.log('cardRefs = ', this.cardRefs);
-    this.setState((prevState) => {
-      // const renderedIndexes = prevState.renderedCardIndexes;
-      // renderedIndexes.pop();
-      return {
-        reviewedCards: tempCards,
-        // renderedCardIndexes: renderedIndexes
-      };
-    }, () => {
+    this.setState({ reviewedCards: tempCards }, () => {
+      // Notify parent to update remaining card amount number
       this.props.onPop(this.state.reviewedCards);
     });
   };
@@ -234,7 +248,6 @@ class SwipeableCardView extends PureComponent {
               source={require('assets/icons/ic_like.png')}
             />
           </TouchableOpacity>
-
         </View>
       </View>
     );
