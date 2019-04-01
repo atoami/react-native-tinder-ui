@@ -12,3 +12,7 @@
 - Install dependencies by running `yarn` command
 
 - Run iOS project by running `react-native run-ios` command
+
+## Are you located in Russia?
+
+- If yes, you must use VPN to launch the demo project because you cannot connect to https://api.nasa.gov api in Russia.
