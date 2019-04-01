@@ -1,4 +1,3 @@
-export { Loading } from './Loading';
 export { MSImageView, CachedImageBackground } from './ImageView';
 export {
   SimpleImageButton,
